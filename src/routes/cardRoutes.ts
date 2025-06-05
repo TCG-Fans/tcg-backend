@@ -1,0 +1,16 @@
+import { Router } from 'express';
+import cardController from '../controllers/cardController';
+import { authenticate, isWalletOwner } from '../middleware/authMiddleware';
+
+const router = Router();
+
+// Route for getting all cards (public)
+router.get('/', cardController.getAllCards);
+
+// Route for getting authenticated user's cards (protected)
+router.get('/my/cards', authenticate, cardController.getMyCards);
+
+// Route for getting card by ID (public)
+router.get('/:cardId', cardController.getCardById);
+
+export default router;
