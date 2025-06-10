@@ -37,47 +37,47 @@ async function testAuthentication() {
       return;
     }
     console.log('Starting authentication test...');
-    
+
     // Step 1: Get nonce
     console.log('Requesting nonce...');
     const nonceResponse = await axios.get(`${API_URL}/auth/nonce/${walletAddress}`);
     const { nonce, message } = nonceResponse.data;
-    
+
     console.log('Received nonce:', nonce);
     console.log('Message to sign:', message);
-    
+
     // Step 2: Sign the message
     console.log('Signing message...');
     const signature = await wallet.signMessage(message);
-    
+
     console.log('Signature:', signature);
-    
+
     // Step 3: Verify signature
     console.log('Verifying signature...');
     const verifyResponse = await axios.post(`${API_URL}/auth/verify`, {
       walletAddress,
       signature
     });
-    
+
     const { token } = verifyResponse.data;
-    
+
     console.log('Authentication successful!');
     console.log('JWT token:', token);
     console.log('-----------------------------------');
-    
+
     // Step 4: Test protected endpoint for getting user cards using token
     console.log('Testing user cards endpoint...');
     const myCardsResponse = await axios.get(
-      `${API_URL}/cards/my/cards`,
+      `${API_URL}/cards/my`,
       {
         headers: {
           Authorization: `Bearer ${token}`
         }
       }
     );
-    
+
     console.log('User cards:', myCardsResponse.data);
-    
+
     // Step 5: Verify we received the correct data
     if (myCardsResponse.data.success) {
       console.log(`Received ${myCardsResponse.data.count} user cards`);
@@ -87,7 +87,7 @@ async function testAuthentication() {
     } else {
       console.log('Failed to get user cards:', myCardsResponse.data.error);
     }
-    
+
     console.log('Authentication test completed successfully!');
   } catch (error) {
     console.error('Error during authentication test:');
@@ -107,7 +107,7 @@ async function testNegativeScenario() {
   try {
     console.log('\n-----------------------------------');
     console.log('Starting negative scenario test...');
-    
+
     // Step 1: Try to access protected endpoint without token
     console.log('Testing access to protected endpoint without token...');
     try {
@@ -122,11 +122,11 @@ async function testNegativeScenario() {
         console.error('Unexpected error when testing without token');
       }
     }
-    
+
     // Step 2: Try to access protected endpoint with invalid token
     console.log('\nTesting access with invalid token...');
     const invalidToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRBZGRyZXNzIjoiMHgxMjM0NTY3ODkwIiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid_signature';
-    
+
     try {
       await axios.get(
         `${API_URL}/cards/my/cards`,
@@ -146,7 +146,7 @@ async function testNegativeScenario() {
         console.error('Unexpected error when testing with invalid token');
       }
     }
-    
+
     console.log('\nNegative scenario test completed successfully!');
     console.log('-----------------------------------');
   } catch (error) {

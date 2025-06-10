@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import cardController from '../controllers/cardController';
-import { authenticate, isWalletOwner } from '../middleware/authMiddleware';
+import { authenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
@@ -8,7 +8,10 @@ const router = Router();
 router.get('/', cardController.getAllCards);
 
 // Route for getting authenticated user's cards (protected)
-router.get('/my/cards', authenticate, cardController.getMyCards);
+router.get('/my', authenticate, cardController.getMyCards);
+
+// Route for getting wallet's cards (protected)
+router.get('/wallet/:walletAddress', authenticate, cardController.getCardsByWalletAddress);
 
 // Route for getting card by ID (public)
 router.get('/:cardId', cardController.getCardById);

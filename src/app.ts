@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import routes from './routes';
-import baseRoutes from './routes/baseRoutes';
 import { connectDB } from './config/database';
 
 // Create Express application
@@ -15,9 +14,6 @@ app.use((req, res, next) => {
 
 // Connect to database
 connectDB();
-
-// Basic health routes - must be defined BEFORE middleware
-app.use(baseRoutes);
 
 // Middleware
 app.use(cors());

@@ -6,12 +6,12 @@ import crypto from 'crypto';
 class CardService {
   // Get all cards from the catalog
   async getAllCards(): Promise<ICard[]> {
-      return await Card.find();
+      return Card.find();
   }
 
   // Get card by ID
   async getCardById(cardId: number): Promise<ICard | null> {
-    return await Card.findOne({ cardId });
+    return Card.findOne({cardId});
   }
 
   // Get user's cards

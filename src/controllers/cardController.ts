@@ -1,15 +1,25 @@
 import { Request, Response } from 'express';
 import cardService from '../services/cardService';
+import { mapCardToDto, mapUserCardWithDetails } from '../utils/mappers';
 
-class CardController {  // Get all cards
+class CardController {
+  /**
+   * Get all cards
+   */
   async getAllCards(req: Request, res: Response): Promise<void> {
     try {
       const cards = await cardService.getAllCards();
-      res.status(200).json({
+
+      // Map database models to DTOs
+      const cardDtos = cards.map(card => mapCardToDto(card));
+
+      const response = {
         success: true,
-        count: cards.length,
-        data: cards
-      });
+        count: cardDtos.length,
+        data: cardDtos
+      };
+
+      res.status(200).json(response);
     } catch (error) {
       console.error('Error in getAllCards controller:', error);
       res.status(500).json({
@@ -19,7 +29,9 @@ class CardController {  // Get all cards
     }
   }
 
-
+  /**
+   * Get card by ID
+   */
   async getCardById(req: Request, res: Response): Promise<void> {
     try {
       const { cardId } = req.params;
@@ -33,10 +45,15 @@ class CardController {  // Get all cards
         return;
       }
 
-      res.status(200).json({
+      // Map database model to DTO
+      const cardDto = mapCardToDto(card);
+
+      const response = {
         success: true,
-        data: card
-      });
+        data: cardDto
+      };
+
+      res.status(200).json(response);
     } catch (error) {
       console.error('Error in getCardById controller:', error);
       res.status(500).json({
@@ -46,8 +63,9 @@ class CardController {  // Get all cards
     }
   }
 
-
-  // Helper method to validate wallet address
+  /**
+   * Helper method to validate wallet address
+   */
   private static isValidWalletAddress(address: string): boolean {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
   }
@@ -79,13 +97,55 @@ class CardController {  // Get all cards
         return;
       }
 
-      const userCards = await cardService.getUserCards(walletAddress);
+      const userCardsData = await cardService.getUserCards(walletAddress);
 
-      res.status(200).json({
+      // Map database models to DTOs
+      const userCardDtos = userCardsData.map(data => mapUserCardWithDetails(data));
+
+      const response = {
         success: true,
-        count: userCards.length,
-        data: userCards
+        count: userCardDtos.length,
+        data: userCardDtos
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error in getMyCards controller:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Server Error'
       });
+    }
+  }
+
+  /**
+   * Get cards by wallet address
+   */
+  async getCardsByWalletAddress(req: Request, res: Response): Promise<void> {
+    try {
+      const { walletAddress } = req.params;
+
+      // Validate wallet address
+      if (!CardController.isValidWalletAddress(walletAddress)) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid wallet address format'
+        });
+        return;
+      }
+
+      const userCardsData = await cardService.getUserCards(walletAddress);
+
+      // Map database models to DTOs
+      const userCardDtos = userCardsData.map(data => mapUserCardWithDetails(data));
+
+      const response = {
+        success: true,
+        count: userCardDtos.length,
+        data: userCardDtos
+      };
+
+      res.status(200).json(response);
     } catch (error) {
       console.error('Error in getMyCards controller:', error);
       res.status(500).json({

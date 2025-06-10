@@ -12,8 +12,7 @@
     "server": "ts-node src/server.ts",
     "db:seed": "ts-node src/scripts/seed-database.ts",
     "db:clear": "ts-node src/scripts/clear-database.ts",
-    "blockchain:monitor": "ts-node src/scripts/monitor-blockchain.ts",
-    "blockchain:sync": "ts-node src/scripts/sync-users.ts",
+    "blockchain:monitor": "ts-node src/scripts/monitor-blockchain.ts"
   },
   "keywords": [],
   "author": "",
