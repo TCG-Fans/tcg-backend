@@ -1,5 +1,6 @@
 import Card, { ICard } from '../models/Card';
 import User, { IUser, IUserCard } from '../models/User';
+import crypto from 'crypto';
 
 
 class CardService {
@@ -9,7 +10,7 @@ class CardService {
   }
 
   // Get card by ID
-  async getCardById(cardId: string): Promise<ICard | null> {
+  async getCardById(cardId: number): Promise<ICard | null> {
     return await Card.findOne({ cardId });
   }
 
@@ -18,20 +19,20 @@ class CardService {
     try {
       // Normalize wallet address
       const normalizedAddress = walletAddress.toLowerCase();
-      
+
       // Find user with their cards
       const user = await User.findOne({ walletAddress: normalizedAddress }).lean();
-      
+
       if (!user || !user.cards || user.cards.length === 0) {
         return [];
       }
-      
+
       // Get all card IDs from user's cards
       const cardIds = user.cards.map(card => card.cardId);
-      
+
       // Get all cards data
       const cards = await Card.find({ cardId: { $in: cardIds } }).lean();
-      
+
       // Map user cards with their data
       const userCardsWithData = user.cards.map(userCard => {
         const cardData = cards.find(card => card.cardId === userCard.cardId) || null;
@@ -40,7 +41,7 @@ class CardService {
           userCard: userCard as IUserCard
         };
       }).filter(item => item.card !== null);
-      
+
       return userCardsWithData;
     } catch (error) {
       console.error('Error fetching user cards:', error);
@@ -48,42 +49,51 @@ class CardService {
     }
   }
 
-  // Handle token transfer event
-  async handleTransferEvent(from: string, to: string, tokenId: string, cardId: string): Promise<void> {
+  // Add card to user's collection
+  async addCardToUser(walletAddress: string, cardId: number, quantity: number = 1, blockNumber: number = 0): Promise<void> {
     try {
-      // Normalize addresses
-      const normalizedTo = to.toLowerCase();
-      
-      // If this is a new card (mint) or transfer to a new user
-      if (from === '0x0000000000000000000000000000000000000000' || from.toLowerCase() !== normalizedTo) {
-        // Find the user or create if not exists
-        const user = await User.findOne({ walletAddress: normalizedTo });
-        
-        if (user) {
-          // Add the card to user's cards array
-          user.cards.push({
-            cardId,
-            tokenId,
-            acquiredAt: new Date(),
-            transactionHash: 'transaction_hash' // In a real project, this would be the actual transaction hash
-          });
-          
-          await user.save();
-        }
+      // Normalize wallet address
+      const normalizedAddress = walletAddress.toLowerCase();
+
+      // Find the user or create a new one if doesn't exist
+      let user = await User.findOne({ walletAddress: normalizedAddress });
+
+      if (!user) {
+        // Generate a random nonce for new user
+        const nonce = crypto.randomBytes(32).toString('hex');
+
+        user = await User.create({
+          walletAddress: normalizedAddress,
+          nonce,
+          cards: []
+        });
       }
-      
-      // If this is a transfer from one user to another
-      if (from !== '0x0000000000000000000000000000000000000000') {
-        const normalizedFrom = from.toLowerCase();
-        
-        // Remove card from previous owner
-        await User.updateOne(
-          { walletAddress: normalizedFrom },
-          { $pull: { cards: { tokenId } } }
-        );
+
+      // Check if user already has this card
+      const existingCardIndex = user.cards.findIndex(card => card.cardId === cardId);
+
+      // Check if this is a duplicate transaction (same card and block number)
+      if (existingCardIndex >= 0 && user.cards[existingCardIndex].lastBlockNumber === blockNumber && blockNumber !== 0) {
+        console.log(`Duplicate transaction detected for card ${cardId} at block ${blockNumber}. Skipping.`);
+        return;
       }
+
+      if (existingCardIndex >= 0) {
+        // User already has this card, update quantity and block number
+        user.cards[existingCardIndex].quantity += quantity;
+        user.cards[existingCardIndex].lastBlockNumber = blockNumber;
+      } else {
+        // Add new card to user's collection
+        user.cards.push({
+          cardId,
+          quantity,
+          lastBlockNumber: blockNumber
+        });
+      }
+
+      await user.save();
     } catch (error) {
-      console.error(`Error handling transfer event for token ${tokenId}:`, error);
+      console.error(`Error adding card ${cardId} to user ${walletAddress}:`, error);
       throw error;
     }
   }

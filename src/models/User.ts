@@ -2,10 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 // Card interface for user's cards
 export interface IUserCard {
-  cardId: string;         // Reference to Card model
-  tokenId: string;        // Blockchain token ID
-  acquiredAt: Date;       // When the card was acquired
-  transactionHash: string; // Transaction hash
+  cardId: number;  // Reference to Card model
+  quantity: number; // Quantity of cards owned
+  lastBlockNumber: number; // Last block number when this card was added/updated
 }
 
 // Interface for user
@@ -37,21 +36,19 @@ const UserSchema: Schema = new Schema(
     },
     cards: [{
       cardId: {
-        type: String,
+        type: Number,
         required: true,
         ref: 'Card'
       },
-      tokenId: {
-        type: String,
-        required: true
+      quantity: {
+        type: Number,
+        required: true,
+        default: 1
       },
-      acquiredAt: {
-        type: Date,
-        default: Date.now
-      },
-      transactionHash: {
-        type: String,
-        required: true
+      lastBlockNumber: {
+        type: Number,
+        required: true,
+        default: 0
       }
     }]
   },

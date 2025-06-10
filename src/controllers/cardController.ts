@@ -23,7 +23,7 @@ class CardController {  // Get all cards
   async getCardById(req: Request, res: Response): Promise<void> {
     try {
       const { cardId } = req.params;
-      const card = await cardService.getCardById(cardId);
+      const card = await cardService.getCardById(Number(cardId));
 
       if (!card) {
         res.status(404).json({

@@ -2,7 +2,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 // Interface for card
 export interface ICard extends Document {
-  cardId: string;
+  cardId: number;
+  setId: number;
   name: string;
   description: string;
   imageUrl: string;
@@ -19,30 +20,30 @@ export interface ICard extends Document {
 const CardSchema: Schema = new Schema(
   {
     cardId: {
-      type: String,
+      type: Number,
       required: true,
       unique: true,
     },
+    setId: {
+      type: Number,
+      required: true
+    },
     name: {
       type: String,
-      required: true,
+      required: false,
     },
     description: {
       type: String,
-      required: true,
+      required: false,
     },
     imageUrl: {
       type: String,
-      required: true,
+      required: false,
     },
     rarity: {
       type: String,
       required: true,
-      enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'],
-    },
-    type: {
-      type: String,
-      required: true,
+      enum: ['common', 'rare', 'mythic'],
     },
     attributes: {
       type: Map,
