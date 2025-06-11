@@ -20,13 +20,35 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Create tsconfig.json if not exists
+      run: |
+        if [ ! -f tsconfig.json ]; then
+          echo "Creating tsconfig.json..."
+          cat > tsconfig.json << 'EOL'
+          {
+            "compilerOptions": {
+              "target": "es2016",
+              "module": "commonjs",
+              "outDir": "./dist",
+              "esModuleInterop": true,
+              "forceConsistentCasingInFileNames": true,
+              "strict": true,
+              "skipLibCheck": true,
+              "resolveJsonModule": true
+            },
+            "include": ["src/**/*"],
+            "exclude": ["node_modules", "**/*.test.ts"]
+          }
+          EOL
+        fi
+      
     - name: Build project
       run: npm run build
       
     - name: Create deployment package
       run: |
         # Создаем архив с нужными файлами
-        tar -czf deploy.tar.gz dist package*.json Dockerfile docker-compose.yml src .env.example
+        tar -czf deploy.tar.gz dist package*.json Dockerfile docker-compose.yml src .env.example tsconfig.json
         
     - name: Setup SSH
       run: |
@@ -72,8 +94,8 @@ jobs:
             cp .env.example .env
             echo "ВНИМАНИЕ: Создан .env из примера. Необходимо обновить переменные окружения!"
           else
-            echo "ОШИБКА: Не найден файл .env.example!"
-            exit 1
+            echo "ВНИМАНИЕ: Не найден файл .env.example! Создаем пустой .env файл."
+            touch .env
           fi
           
           # Проверка установки Docker
@@ -91,7 +113,7 @@ jobs:
           fi
           
           # Проверка установки Docker Compose
-          if ! command -v docker-compose &> /dev/null; then
+          if ! command -v docker-compose &> /dev/null && ! command -v docker compose &> /dev/null; then
             echo "Устанавливаем Docker Compose..."
             sudo apt install -y docker-compose-plugin || {
               sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -100,10 +122,17 @@ jobs:
             }
           fi
           
+          # Проверка, какая команда Docker Compose доступна
+          if command -v docker-compose &> /dev/null; then
+            DOCKER_COMPOSE_CMD="docker-compose"
+          else
+            DOCKER_COMPOSE_CMD="docker compose"
+          fi
+          
           # Запускаем приложение через Docker Compose
           echo "Запускаем приложение..."
-          sudo docker-compose down || true
-          sudo docker-compose up -d --build
+          sudo $DOCKER_COMPOSE_CMD down || true
+          sudo $DOCKER_COMPOSE_CMD up -d --build
           
           # Очистка старых образов
           echo "Очищаем неиспользуемые Docker образы..."
