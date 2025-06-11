@@ -7,37 +7,38 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-    - uses: actions/checkout@v3
-
+    - uses: actions/checkout@v4
+    
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18'  # Используйте версию Node.js, соответствующую вашему проекту
+        node-version: '18'
         cache: 'npm'
-
+        
     - name: Install dependencies
       run: npm ci
-
+      
     - name: Build project
       run: npm run build
-
+      
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-
+        
     - name: Create deployment package
       run: |
-        tar -czf deploy.tar.gz dist package*.json .env.example Dockerfile docker-compose.yml
-
+        # Создаем архив с нужными файлами
+        tar -czf deploy.tar.gz dist package*.json Dockerfile docker-compose.yml src .env.example
+        
     - name: Upload deployment package to S3
       run: |
         aws s3 cp deploy.tar.gz s3://${{ secrets.AWS_S3_BUCKET }}/deploy-${{ github.sha }}.tar.gz
-
+        
     - name: Deploy to EC2 instance
       uses: appleboy/ssh-action@master
       with:
@@ -45,33 +46,77 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          echo "Начинаем деплой приложения..."
+          
           # Создаем директорию для деплоя, если её нет
           mkdir -p ~/app
           cd ~/app
           
+          # Установка AWS CLI, если не установлен
+          if ! command -v aws &> /dev/null; then
+            echo "Устанавливаем AWS CLI..."
+            sudo apt update
+            sudo apt install -y awscli
+          fi
+          
+          # Настраиваем AWS CLI
+          export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
+          export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          export AWS_DEFAULT_REGION="${{ secrets.AWS_REGION }}"
+          
           # Скачиваем архив с приложением из S3
+          echo "Скачиваем архив из S3..."
           aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/deploy-${{ github.sha }}.tar.gz ./deploy.tar.gz
           
           # Распаковываем архив
+          echo "Распаковываем архив..."
           tar -xzf deploy.tar.gz
           rm deploy.tar.gz
           
           # Копируем .env файл, если он существует
           if [ -f ~/.env ]; then
+            echo "Копируем существующий .env файл..."
             cp ~/.env ./.env
-          else
+          elif [ -f .env.example ]; then
+            echo "Создаем .env из примера..."
             cp .env.example .env
             echo "ВНИМАНИЕ: Создан .env из примера. Необходимо обновить переменные окружения!"
+          else
+            echo "ОШИБКА: Не найден файл .env.example!"
+            exit 1
           fi
           
-          # Проверяем, запущен ли Docker
-          if ! systemctl is-active --quiet docker; then
+          # Проверка установки Docker
+          if ! command -v docker &> /dev/null; then
+            echo "Устанавливаем Docker..."
+            sudo apt update
+            sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            sudo apt update
+            sudo apt install -y docker-ce
+            sudo usermod -aG docker $USER
             sudo systemctl start docker
+            sudo systemctl enable docker
+          fi
+          
+          # Проверка установки Docker Compose
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Устанавливаем Docker Compose..."
+            sudo apt install -y docker-compose-plugin || {
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+            }
           fi
           
           # Запускаем приложение через Docker Compose
-          docker compose down || true
-          docker compose up -d --build
+          echo "Запускаем приложение..."
+          sudo docker-compose down || true
+          sudo docker-compose up -d --build
           
           # Очистка старых образов
-          docker image prune -af
+          echo "Очищаем неиспользуемые Docker образы..."
+          sudo docker image prune -af
+          
+          echo "Деплой успешно завершен!"
