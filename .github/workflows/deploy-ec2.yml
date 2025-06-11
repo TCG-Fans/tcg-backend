@@ -23,21 +23,22 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-        
     - name: Create deployment package
       run: |
         # Создаем архив с нужными файлами
         tar -czf deploy.tar.gz dist package*.json Dockerfile docker-compose.yml src .env.example
         
-    - name: Upload deployment package to S3
+    - name: Setup SSH
       run: |
-        aws s3 cp deploy.tar.gz s3://${{ secrets.AWS_S3_BUCKET }}/deploy-${{ github.sha }}.tar.gz
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Copy deployment package to EC2
+      run: |
+        # Копируем архив напрямую на EC2
+        scp -i ~/.ssh/id_rsa deploy.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/deploy.tar.gz
         
     - name: Deploy to EC2 instance
       uses: appleboy/ssh-action@master
@@ -52,26 +53,15 @@ jobs:
           mkdir -p ~/app
           cd ~/app
           
-          # Установка AWS CLI, если не установлен
-          if ! command -v aws &> /dev/null; then
-            echo "Устанавливаем AWS CLI..."
-            sudo apt update
-            sudo apt install -y awscli
-          fi
-          
-          # Настраиваем AWS CLI
-          export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
-          export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          export AWS_DEFAULT_REGION="${{ secrets.AWS_REGION }}"
-          
-          # Скачиваем архив с приложением из S3
-          echo "Скачиваем архив из S3..."
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/deploy-${{ github.sha }}.tar.gz ./deploy.tar.gz
+          # Копируем архив из домашней директории
+          echo "Копируем архив..."
+          cp ~/deploy.tar.gz ./deploy.tar.gz
           
           # Распаковываем архив
           echo "Распаковываем архив..."
           tar -xzf deploy.tar.gz
           rm deploy.tar.gz
+          rm ~/deploy.tar.gz  # Удаляем исходный архив
           
           # Копируем .env файл, если он существует
           if [ -f ~/.env ]; then
