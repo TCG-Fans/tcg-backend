@@ -2,7 +2,7 @@ name: Deploy to AWS EC2
 
 on:
   push:
-    branches: [ main ]  # Замените на вашу основную ветку (main или master)
+    branches: [ main ]  # Replace with your main branch (main or master)
 
 jobs:
   deploy:
@@ -22,10 +22,10 @@ jobs:
 
     - name: Build project
       run: npm run build
-      
+
     - name: Create deployment package
       run: |
-        # Создаем архив с нужными файлами
+        # Create an archive with required files
         tar -czf deploy.tar.gz dist package*.json Dockerfile docker-compose.yml src .env.example tsconfig.json
 
     - name: Setup SSH
@@ -37,7 +37,7 @@ jobs:
 
     - name: Copy deployment package to EC2
       run: |
-        # Копируем архив напрямую на EC2
+        # Copy archive directly to EC2
         scp -i ~/.ssh/id_rsa deploy.tar.gz ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/deploy.tar.gz
 
     - name: Deploy to EC2 instance
@@ -47,38 +47,38 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          echo "Начинаем деплой приложения..."
+          echo "Starting application deployment..."
           
-          # Создаем директорию для деплоя, если её нет
+          # Create deployment directory if it doesn't exist
           mkdir -p ~/app
           cd ~/app
           
-          # Копируем архив из домашней директории
-          echo "Копируем архив..."
+          # Copy archive from home directory
+          echo "Copying archive..."
           cp ~/deploy.tar.gz ./deploy.tar.gz
           
-          # Распаковываем архив
-          echo "Распаковываем архив..."
+          # Unpack archive
+          echo "Unpacking archive..."
           tar -xzf deploy.tar.gz
           rm deploy.tar.gz
-          rm ~/deploy.tar.gz  # Удаляем исходный архив
+          rm ~/deploy.tar.gz  # Remove original archive
           
-          # Копируем .env файл, если он существует
+          # Copy .env file if it exists
           if [ -f ~/.env ]; then
-            echo "Копируем существующий .env файл..."
+            echo "Copying existing .env file..."
             cp ~/.env ./.env
           elif [ -f .env.example ]; then
-            echo "Создаем .env из примера..."
+            echo "Creating .env from example..."
             cp .env.example .env
-            echo "ВНИМАНИЕ: Создан .env из примера. Необходимо обновить переменные окружения!"
+            echo "WARNING: Created .env from example. Environment variables need to be updated!"
           else
-            echo "ВНИМАНИЕ: Не найден файл .env.example! Создаем пустой .env файл."
+            echo "WARNING: .env.example file not found! Creating empty .env file."
             touch .env
           fi
           
-          # Проверка установки Docker
+          # Check Docker installation
           if ! command -v docker &> /dev/null; then
-            echo "Устанавливаем Docker..."
+            echo "Installing Docker..."
             sudo apt update
             sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -90,9 +90,9 @@ jobs:
             sudo systemctl enable docker
           fi
           
-          # Проверка установки Docker Compose
+          # Check Docker Compose installation
           if ! command -v docker-compose &> /dev/null && ! command -v docker compose &> /dev/null; then
-            echo "Устанавливаем Docker Compose..."
+            echo "Installing Docker Compose..."
             sudo apt install -y docker-compose-plugin || {
               sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
@@ -100,20 +100,20 @@ jobs:
             }
           fi
           
-          # Проверка, какая команда Docker Compose доступна
+          # Check which Docker Compose command is available
           if command -v docker-compose &> /dev/null; then
             DOCKER_COMPOSE_CMD="docker-compose"
           else
             DOCKER_COMPOSE_CMD="docker compose"
           fi
           
-          # Запускаем приложение через Docker Compose
-          echo "Запускаем приложение..."
+          # Launch application via Docker Compose
+          echo "Starting the application..."
           sudo $DOCKER_COMPOSE_CMD down || true
           sudo $DOCKER_COMPOSE_CMD up -d --build
           
-          # Очистка старых образов
-          echo "Очищаем неиспользуемые Docker образы..."
+          # Clean up old images
+          echo "Cleaning unused Docker images..."
           sudo docker image prune -af
           
-          echo "Деплой успешно завершен!"
+          echo "Deployment completed successfully!"
