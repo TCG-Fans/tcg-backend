@@ -42,19 +42,19 @@ process.on('SIGINT', async () => {
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
-  blockchainService.stopMonitoring().then(() => {
-    process.exit(1);
-  });
+  // blockchainService.stopMonitoring().then(() => {
+  //   process.exit(1);
+  // });
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err);
-  blockchainService.stopMonitoring().then(() => {
-    server.close(() => {
-      process.exit(1);
-    });
-  });
+  // blockchainService.stopMonitoring().then(() => {
+  //   server.close(() => {
+  //     process.exit(1);
+  //   });
+  // });
 });
 
 export default server;

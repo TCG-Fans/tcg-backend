@@ -16,31 +16,37 @@ const CARDPOOL_ABI = [
   "event RequestFulfilled(uint256 requestId, uint256[] randomWords)",
 
   // Cardpool specific events
-  "event MintRequested(uint256 indexed requestId, address indexed to, uint16 indexed extensionId)",
-  "event PackMinted(address indexed to, uint256[] cardIds)",
-  "event ExtensionAdded(uint16 indexed extensionId, uint8 commonCount, uint8 rareCount, uint8 epicCount)",
-  "event ExtensionRetired(uint16 indexed extensionId)",
-  "event ExtensionRestored(uint16 indexed extensionId)",
-  "event InitialSetMinted(address indexed to)",
-  "event PriceUpdated(string priceType, uint256 newPrice)",
-  "event InitialSetUpdated()",
-
-  // read
-  "function userCards(address) view returns ((uint32 id,uint256 quantity)[])",
-  "function extensions(uint16) view returns (uint8 commonCount,uint8 rareCount,uint8 epicCount,bool exists,bool obsolete)",
-
-  //
-  "function mintPack(uint16 extensionId,address to,bool native) returns (uint256)",
+  "event OwnershipTransferRequested(address indexed from, address indexed to)",
+  "event OwnershipTransferred(address indexed from, address indexed to)",
+  "event CoordinatorSet(address vrfCoordinator)",
+  
+  // Functions
+  "function acceptOwnership()",
+  "function addExtenstion(uint16 extension, uint8 commonCount, uint8 rareCount, uint8 mythicCount)",
+  "function balanceOf(address account, uint256 id) view returns (uint256)",
+  "function balanceOfBatch(address[] accounts, uint256[] ids) view returns (uint256[])",
+  "function burn(uint32 id, uint256 amount)",
+  "function burnBatch(uint256[] ids, uint256[] amounts)",
+  "function isApprovedForAll(address account, address operator) view returns (bool)",
   "function mintInitial(address to)",
-  "function burn(uint32 id,uint256 amount)",
-  "function burnBatch(uint256[] ids,uint256[] amounts)",
+  "function mintPack(uint16 extensionId, address to, bool native) returns (uint256)",
+  "function owner() view returns (address)",
+  "function rawFulfillRandomWords(uint256 requestId, uint256[] randomWords)",
   "function retireExtension(uint16 extension)",
   "function rollbackRetirement(uint16 extension)",
-  "function addExtenstion(uint16 extension,uint8 commonCount,uint8 rareCount,uint8 epicCount)",
+  "function s_vrfCoordinator() view returns (address)",
+  "function safeBatchTransferFrom(address from, address to, uint256[] ids, uint256[] values, bytes data)",
+  "function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes data)",
+  "function setApprovalForAll(address operator, bool approved)",
+  "function setCoordinator(address _vrfCoordinator)",
   "function splitUint256ToUint32Array(uint256 value) pure returns (uint32[])",
-  "function updatePackPrice(uint256 newPrice)",
+  "function supportsInterface(bytes4 interfaceId) view returns (bool)",
+  "function transferOwnership(address to)",
+  "function updateInitialSet((uint32 id, uint256 quantity)[] newSet)",
   "function updateInitialSetPrice(uint256 newPrice)",
-  "function updateInitialSet((uint32 id,uint256 quantity)[] newSet)"
+  "function updatePackPrice(uint256 newPrice)",
+  "function uri(uint256) view returns (string)",
+  "function userCards(address user) view returns ((uint32 id, uint256 quantity)[])"
 ];
 
 class BlockchainService {
@@ -220,7 +226,6 @@ class BlockchainService {
       console.log(`All historical events processed up to block ${currentBlock}`);
     } catch (error) {
       console.error('Error processing historical events:', error);
-      throw error;
     }
   }
 
@@ -304,7 +309,7 @@ class BlockchainService {
     try {
       parsedLog = this.cardpoolContract.interface.parseLog(raw);
     } catch (e) {
-      console.log(`→ Unrecognized log (topics = ${raw.topics[0]})`);
+      console.log(`→ Unrecognized log ${JSON.stringify(raw)}`);
       console.log('──────────────────────────────────');
       return;
     }
