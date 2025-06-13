@@ -8,7 +8,10 @@ export interface ICard extends Document {
   description: string;
   imageUrl: string;
   rarity: string;
-  type: string;
+  type: string; // unit/spell
+  power: number;
+  cost: number;
+  faction: string;
   attributes: {
     [key: string]: number | string;
   };
@@ -44,6 +47,23 @@ const CardSchema: Schema = new Schema(
       type: String,
       required: true,
       enum: ['common', 'rare', 'mythic'],
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: ['unit', 'spell'],
+    },
+    power: {
+      type: Number,
+      required: false,
+    },
+    cost: {
+      type: Number,
+      required: false,
+    },
+    faction: {
+      type: String,
+      required: false,
     },
     attributes: {
       type: Map,

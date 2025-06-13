@@ -12,6 +12,10 @@ export function mapCardToDto(card: ICard): CardDto {
     description: card.description || '',
     imageUrl: card.imageUrl || '',
     rarity: card.rarity || '',
+    type: card.type || 'unit',
+    power: card.power || 0,
+    cost: card.cost || 0,
+    faction: card.faction || '',
     attributes: card.attributes || {}
   };
 }
@@ -38,6 +42,10 @@ export function mapUserCardWithDetails(
     description: data.card.description || '',
     imageUrl: data.card.imageUrl || '',
     rarity: data.card.rarity || '',
+    type: data.card.type || 'unit',
+    power: data.card.power || 0,
+    cost: data.card.cost || 0,
+    faction: data.card.faction || '',
     quantity: data.userCard.quantity || 0
   };
 }

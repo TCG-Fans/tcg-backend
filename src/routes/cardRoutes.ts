@@ -11,7 +11,7 @@ router.get('/', cardController.getAllCards);
 router.get('/my', authenticate, cardController.getMyCards);
 
 // Route for getting wallet's cards (protected)
-router.get('/wallet/:walletAddress', authenticate, cardController.getCardsByWalletAddress);
+router.get('/wallet/:walletAddress', cardController.getCardsByWalletAddress);
 
 // Route for getting card by ID (public)
 router.get('/:cardId', cardController.getCardById);

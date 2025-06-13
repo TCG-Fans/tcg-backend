@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import app from './app';
 import blockchainService from './services/blockchainService';
+import productionDataService from './services/productionDataService';
 
 // Load environment variables
 dotenv.config();
@@ -12,20 +13,26 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   
-  // Start blockchain monitoring after server is started
-  startBlockchainMonitoring();
+  // Initialize production data and start blockchain monitoring after server is started
+  initializeServices();
 });
 
 /**
- * Start blockchain monitoring
+ * Initialize all services
  */
-async function startBlockchainMonitoring(): Promise<void> {
+async function initializeServices(): Promise<void> {
   try {
+    // Initialize production card data
+    console.log('Initializing production card data...');
+    await productionDataService.seedProductionCardsInitialSet();
+    console.log('Production card data initialized successfully');
+    
+    // Start blockchain monitoring
     console.log('Starting blockchain monitoring...');
     await blockchainService.startMonitoring();
     console.log('Blockchain monitoring started successfully');
   } catch (error) {
-    console.error('Error starting blockchain monitoring:', error);
+    console.error('Error initializing services:', error);
   }
 }
 

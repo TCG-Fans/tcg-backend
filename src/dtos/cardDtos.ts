@@ -9,6 +9,10 @@ export interface CardDto {
   description: string;
   imageUrl: string;
   rarity: string;
+  type: string; // unit/spell
+  power: number;
+  cost: number;
+  faction: string;
   attributes: Record<string, any>;
 }
 
@@ -25,5 +29,9 @@ export interface ExtendedUserCardDto {
   description: string;
   imageUrl: string;
   rarity: string;
+  type: string; // unit/spell
+  power: number;
+  cost: number;
+  faction: string;
   quantity: number;
 }
