@@ -15,9 +15,10 @@ app.use((req, res, next) => {
 // Connect to database
 connectDB();
 
-// CORS configuration for localhost development
+// CORS configuration for localhost development accessing EC2 server
 const corsOptions = {
   origin: [
+    // Local development origins (accessing EC2 server)
     'http://localhost:80',
     'http://localhost:3000',
     'http://localhost:3001', 
@@ -32,13 +33,28 @@ const corsOptions = {
     'http://127.0.0.1:8080',
     'http://127.0.0.1:8081',
     'http://127.0.0.1:80',
+    // EC2 server itself (for internal requests)
+    'http://ec2-3-83-215-13.compute-1.amazonaws.com',
+    'http://ec2-3-83-215-13.compute-1.amazonaws.com:80'
   ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
 // Middleware
 app.use(cors(corsOptions));
+
+// Content Security Policy for cross-origin requests
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "connect-src 'self' http://localhost:* http://127.0.0.1:* http://ec2-3-83-215-13.compute-1.amazonaws.com"
+  );
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
