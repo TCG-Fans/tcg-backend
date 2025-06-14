@@ -15,28 +15,9 @@ app.use((req, res, next) => {
 // Connect to database
 connectDB();
 
-// CORS configuration for localhost development accessing EC2 server
+// CORS configuration - allow all for development
 const corsOptions = {
-  origin: [
-    // Local development origins (accessing EC2 server)
-    'http://localhost:80',
-    'http://localhost:3000',
-    'http://localhost:3001', 
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:8080',
-    'http://localhost:8081',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174',
-    'http://127.0.0.1:8080',
-    'http://127.0.0.1:8081',
-    'http://127.0.0.1:80',
-    // EC2 server itself (for internal requests)
-    'http://ec2-3-83-215-13.compute-1.amazonaws.com',
-    'http://ec2-3-83-215-13.compute-1.amazonaws.com:80'
-  ],
+  origin: true, // Allow all origins for development
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -46,11 +27,11 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 
-// Content Security Policy for cross-origin requests
+// Content Security Policy - allow all for development
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    "connect-src 'self' http://localhost:* http://127.0.0.1:* http://ec2-3-83-215-13.compute-1.amazonaws.com"
+    "connect-src *; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
   );
   next();
 });
