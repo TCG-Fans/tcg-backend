@@ -2,6 +2,7 @@ import Deck, { IDeck, IDeckCard } from '../models/Deck';
 import Card, { ICard } from '../models/Card';
 import User, { IUser } from '../models/User';
 import { Document } from 'mongoose';
+import websocketService from './websocketService';
 
 class DeckService {
   /**
@@ -128,6 +129,15 @@ class DeckService {
 
       // Save deck
       await deck.save();
+      
+      // Emit WebSocket event for deck update
+      websocketService.emitToUser(normalizedAddress, 'deckUpdated', {
+        walletAddress: normalizedAddress,
+        action: 'add',
+        cardId,
+        quantity
+      });
+      
       return deck;
     } catch (error) {
       console.error('Error adding card to deck:', error);
@@ -172,6 +182,14 @@ class DeckService {
 
       // Save deck
       await deck.save();
+      
+      // Emit WebSocket event for deck update
+      websocketService.emitToUser(normalizedAddress, 'deckUpdated', {
+        walletAddress: normalizedAddress,
+        action: 'remove',
+        cardId
+      });
+      
       return deck;
     } catch (error) {
       console.error('Error removing card from deck:', error);
@@ -199,6 +217,15 @@ class DeckService {
       });
 
       await deck.save();
+      
+      // Emit WebSocket event for new deck creation
+      websocketService.emitToUser(walletAddress, 'deckUpdated', {
+        walletAddress,
+        action: 'add',
+        cardId: 1, // Default card
+        quantity: 1
+      });
+      
       return deck;
     } catch (error) {
       console.error('Error creating default deck:', error);
@@ -220,6 +247,12 @@ class DeckService {
 
       deck.cards = [];
       await deck.save();
+      
+      // Emit WebSocket event for deck clear
+      websocketService.emitToUser(normalizedAddress, 'deckUpdated', {
+        walletAddress: normalizedAddress,
+        action: 'clear'
+      });
       
       return deck;
     } catch (error) {

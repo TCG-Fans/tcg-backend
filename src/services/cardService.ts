@@ -1,7 +1,7 @@
 import Card, { ICard } from '../models/Card';
 import User, { IUser, IUserCard } from '../models/User';
 import crypto from 'crypto';
-
+import websocketService from './websocketService';
 
 class CardService {
   // Get all cards from the catalog
@@ -92,6 +92,15 @@ class CardService {
       }
 
       await user.save();
+
+      // Emit WebSocket event for card addition
+      websocketService.emitToUser(normalizedAddress, 'cardAdded', {
+        walletAddress: normalizedAddress,
+        cardId,
+        quantity
+      });
+
+      console.log(`Card ${cardId} added to user ${normalizedAddress}. Quantity: ${quantity}`);
     } catch (error) {
       console.error(`Error adding card ${cardId} to user ${walletAddress}:`, error);
       throw error;

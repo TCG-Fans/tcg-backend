@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import app from './app';
 import blockchainService from './services/blockchainService';
 import productionDataService from './services/productionDataService';
+import websocketService from './services/websocketService';
 
 // Load environment variables
 dotenv.config();
@@ -9,9 +11,16 @@ dotenv.config();
 // Define port
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize WebSocket service
+websocketService.initialize(httpServer);
+
 // Start the server
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket server ready on port ${PORT}`);
   
   // Initialize production data and start blockchain monitoring after server is started
   initializeServices();
@@ -38,10 +47,10 @@ async function initializeServices(): Promise<void> {
 
 // Handle server shutdown - stop blockchain monitoring
 process.on('SIGINT', async () => {
-  console.log('Stopping server and blockchain monitoring...');
+  console.log('Stopping server, WebSocket service, and blockchain monitoring...');
   await blockchainService.stopMonitoring();
   server.close(() => {
-    console.log('Server and blockchain monitoring stopped');
+    console.log('Server, WebSocket service, and blockchain monitoring stopped');
     process.exit(0);
   });
 });
