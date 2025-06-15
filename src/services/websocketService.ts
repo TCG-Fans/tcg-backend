@@ -1,8 +1,10 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import authService from './authService';
+import matchmakingService from './matchmakingService';
+import { MatchmakingEvents } from '../models/Match';
 
-export interface WebSocketEvents {
+export interface WebSocketEvents extends MatchmakingEvents {
   // Card events
   cardAdded: {
     walletAddress: string;
@@ -119,6 +121,9 @@ class WebSocketService {
                 walletAddress,
                 timestamp: new Date()
               });
+
+              // Handle matchmaking disconnection
+              matchmakingService.handleDisconnection(walletAddress);
             }
           }
         }
@@ -145,6 +150,20 @@ class WebSocketService {
     this.io.to(`user:${normalizedAddress}`).emit(event, data);
 
     console.log(`WebSocket event emitted to ${normalizedAddress}:`, event, data);
+  }
+
+  /**
+   * Get the first socket ID for a user (for matchmaking)
+   */
+  getUserSocketId(walletAddress: string): string | null {
+    const normalizedAddress = walletAddress.toLowerCase();
+    const userSockets = this.connectedUsers.get(normalizedAddress);
+    
+    if (userSockets && userSockets.size > 0) {
+      return Array.from(userSockets)[0]; // Return first socket ID
+    }
+    
+    return null;
   }
 
   /**
