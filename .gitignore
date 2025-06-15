@@ -51,7 +51,7 @@ lerna-debug.log*
 .env.production
 
 # Windsurf documentation
-windsurf_docs/
+# windsurf_docs/
 # IDE / editors
 .idea/
 .vscode/

@@ -13,7 +13,8 @@ console.log('-----------------------------------');
 
 // Base API URL
 const PORT = process.env.PORT || 3000;
-const API_URL = `http://localhost:${PORT}/api`;
+// const API_URL = `http://localhost:${PORT}/api`;
+const API_URL = "http://ec2-3-83-215-13.compute-1.amazonaws.com/api"
 
 console.log(`Using API URL: ${API_URL}`);
 
@@ -26,7 +27,7 @@ async function testAuthentication() {
     console.log('Checking server availability...');
     try {
       // Check server availability via /health endpoint
-      await axios.get(`http://localhost:${PORT}/health`);
+      await axios.get(`http://ec2-3-83-215-13.compute-1.amazonaws.com/api/health`);
       console.log('Server is available!');
     } catch (error) {
       console.error('Server is not available. Make sure the server is running on port', PORT);
