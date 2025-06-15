@@ -19,7 +19,7 @@ const CARDPOOL_ABI = [
   "event OwnershipTransferRequested(address indexed from, address indexed to)",
   "event OwnershipTransferred(address indexed from, address indexed to)",
   "event CoordinatorSet(address vrfCoordinator)",
-  
+
   // Functions
   "function acceptOwnership()",
   "function addExtenstion(uint16 extension, uint8 commonCount, uint8 rareCount, uint8 mythicCount)",
@@ -237,7 +237,7 @@ class BlockchainService {
 
     // Listen for all events
     this.cardpoolContract.on('*', async (event) => {
-      await this.logEvent(event);
+      await this.logEvent(event.log);
     });
 
     // Set up WebSocket reconnection if using WebSocket provider
