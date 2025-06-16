@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import routes from './routes';
 import { connectDB } from './config/database';
 
@@ -31,13 +32,28 @@ app.use(cors(corsOptions));
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    "connect-src *; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+    "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.socket.io https://cdnjs.cloudflare.com https://unpkg.com *; style-src 'self' 'unsafe-inline' *; connect-src 'self' ws: wss: *; img-src 'self' data: *; font-src 'self' *;"
   );
   next();
 });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Статический файл-сервер для тестовых файлов
+const testFilesPath = path.join(__dirname, '..');
+app.use('/test', express.static(testFilesPath, {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html');
+    }
+  }
+}));
+
+// Специальный маршрут для основного тестового файла
+app.get('/test-matchmaking', (req, res) => {
+  res.sendFile(path.join(testFilesPath, 'test-matchmaking-multi-wallet.html'));
+});
 
 // API маршруты
 app.use('/api', routes);

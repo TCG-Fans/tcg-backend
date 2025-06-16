@@ -59,11 +59,11 @@ class WebSocketService {
   private setupEventHandlers(): void {
     if (!this.io) return;
 
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', async (socket) => {
       console.log(`WebSocket client connected: ${socket.id}`);
 
       // Handle authentication
-      socket.on('authenticate', (token: string) => {
+      socket.on('authenticate', async (token: string) => {
         try {
           const decoded = authService.verifyToken(token);
           console.log('Decoded token:', decoded);
@@ -93,6 +93,13 @@ class WebSocketService {
             walletAddress,
             timestamp: new Date()
           });
+
+          // Try to resume any active match for this player
+          try {
+            await matchmakingService.resumeMatch(walletAddress, socket.id);
+          } catch (error) {
+            console.error(`Error resuming match for ${walletAddress}:`, error);
+          }
 
           socket.emit('authenticated', { success: true, walletAddress });
         } catch (error) {

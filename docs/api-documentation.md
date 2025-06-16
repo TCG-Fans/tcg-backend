@@ -8,6 +8,7 @@ This document provides comprehensive information about the TCG Fans API endpoint
 2. [Authentication Routes](#authentication-routes)
 3. [Card Routes](#card-routes)
 4. [Deck Routes](#deck-routes)
+5. [Matchmaking Routes](#matchmaking-routes)
 
 ## Base Routes
 
@@ -155,8 +156,7 @@ Retrieve the complete card catalog.
         "mana": 7,
         "element": "fire"
       }
-    },
-    // More cards...
+    }
   ]
 }
 ```
@@ -228,8 +228,7 @@ Retrieve the authenticated user's card collection.
       "imageUrl": "https://example.com/cards/fire-dragon.jpg",
       "rarity": "mythic",
       "quantity": 2
-    },
-    // More cards...
+    }
   ]
 }
 ```
@@ -269,8 +268,7 @@ Retrieve cards owned by a specific wallet address.
       "imageUrl": "https://example.com/cards/fire-dragon.jpg",
       "rarity": "mythic",
       "quantity": 2
-    },
-    // More cards...
+    }
   ]
 }
 ```
@@ -495,6 +493,264 @@ Remove all cards from the user's deck.
 **Error Responses**:
 - **401 Unauthorized**: User not authenticated
 - **500 Internal Server Error**: Server error
+
+## Matchmaking Routes
+
+Matchmaking routes handle player queue management, match creation, and match lifecycle. All matchmaking endpoints require authentication and an active WebSocket connection.
+
+### Join Matchmaking Queue
+
+Add the authenticated player to the matchmaking queue to find opponents.
+
+- **URL**: `/api/matchmaking/join`
+- **Method**: `POST`
+- **Authentication**: Required (JWT token in Authorization header)
+- **Prerequisites**: Active WebSocket connection required
+
+**Response**:
+- **Status Code**: 200 OK
+- **Content**: JSON object
+
+**Success Response Body**:
+```json
+{
+  "success": true,
+  "message": "Joined matchmaking queue"
+}
+```
+
+**Error Response Bodies**:
+```json
+{
+  "success": false,
+  "error": "WebSocket connection required for matchmaking"
+}
+```
+```json
+{
+  "success": false,
+  "error": "Player already in queue"
+}
+```
+```json
+{
+  "success": false,
+  "error": "Player already has an active match"
+}
+```
+
+**WebSocket Events Emitted**:
+- `queueJoined`: Sent to the player with queue position and size
+- `matchFound`: Sent to both players when a match is created
+
+### Leave Queue or Cancel Match
+
+Remove the player from the matchmaking queue or cancel an active match.
+
+- **URL**: `/api/matchmaking/leave`
+- **Method**: `DELETE`
+- **Authentication**: Required (JWT token in Authorization header)
+
+**Response**:
+- **Status Code**: 200 OK
+- **Content**: JSON object
+
+**Success Response Bodies**:
+```json
+{
+  "success": true,
+  "message": "Left matchmaking queue"
+}
+```
+```json
+{
+  "success": true,
+  "message": "Match cancelled"
+}
+```
+
+**Error Response Body**:
+```json
+{
+  "success": false,
+  "error": "Not in queue and no pending match found"
+}
+```
+
+**WebSocket Events Emitted**:
+- `queueLeft`: Sent to the player when leaving queue
+- `matchCancelled`: Sent to both players when match is cancelled
+
+### Confirm Match
+
+Confirm participation in a found match. Both players must confirm within the time limit.
+
+- **URL**: `/api/matchmaking/start`
+- **Method**: `POST`
+- **Authentication**: Required (JWT token in Authorization header)
+
+**Response**:
+- **Status Code**: 200 OK
+- **Content**: JSON object
+
+**Success Response Body**:
+```json
+{
+  "success": true,
+  "message": "Match confirmed"
+}
+```
+
+**Error Response Bodies**:
+```json
+{
+  "success": false,
+  "error": "No pending match found"
+}
+```
+```json
+{
+  "success": false,
+  "error": "Match confirmation timeout"
+}
+```
+
+**WebSocket Events Emitted**:
+- `matchConfirmed`: Sent to the confirming player
+- `matchStarted`: Sent to both players when both have confirmed
+- `matchCancelled`: Sent to both players if confirmation times out
+
+### Get Player Status
+
+Retrieve the current matchmaking status for the authenticated player.
+
+- **URL**: `/api/matchmaking/status`
+- **Method**: `GET`
+- **Authentication**: Required (JWT token in Authorization header)
+
+**Response**:
+- **Status Code**: 200 OK
+- **Content**: JSON object
+
+**Success Response Body**:
+```json
+{
+  "success": true,
+  "data": {
+    "inQueue": true,
+    "queuePosition": 2,
+    "queueSize": 5,
+    "activeMatch": null
+  }
+}
+```
+
+**Response with Active Match**:
+```json
+{
+  "success": true,
+  "data": {
+    "inQueue": false,
+    "queuePosition": null,
+    "queueSize": 3,
+    "activeMatch": {
+      "matchId": "match_987654321",
+      "status": "found",
+      "opponent": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "playerStatus": "waiting",
+      "createdAt": "2024-01-15T15:00:00.000Z"
+    }
+  }
+}
+```
+
+### Get Match Details
+
+Retrieve detailed information about a specific match.
+
+- **URL**: `/api/matchmaking/:matchId`
+- **Method**: `GET`
+- **Authentication**: Required (JWT token in Authorization header)
+- **URL Parameters**: 
+  - `matchId`: Unique identifier of the match
+
+**Response**:
+- **Status Code**: 200 OK
+- **Content**: JSON object
+
+**Success Response Body**:
+```json
+{
+  "success": true,
+  "data": {
+    "matchId": "match_123456789",
+    "status": "completed",
+    "opponent": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "playerStatus": "confirmed",
+    "createdAt": "2024-01-15T14:00:00.000Z",
+    "startedAt": "2024-01-15T14:01:00.000Z",
+    "completedAt": "2024-01-15T14:30:00.000Z",
+    "result": "WIN",
+    "winner": "0x14791697260E4c9A71f18484C9f997B308e59325"
+  }
+}
+```
+
+**Error Response Bodies**:
+```json
+{
+  "success": false,
+  "error": "Match not found"
+}
+```
+```json
+{
+  "success": false,
+  "error": "Access denied"
+}
+```
+
+## Match Status Values
+
+- **found**: Match created, waiting for player confirmations
+- **confirmed**: Both players confirmed, match is ready to start
+- **in_progress**: Match is currently active and being played
+- **completed**: Match finished with a result
+- **cancelled**: Match cancelled due to timeout or player action
+
+## Player Status Values
+
+- **waiting**: Player has not yet confirmed the match
+- **confirmed**: Player has confirmed participation
+- **disconnected**: Player lost connection during match
+
+## WebSocket Events
+
+Matchmaking relies heavily on WebSocket events for real-time communication:
+
+### Client → Server Events
+- `authenticate`: Authenticate WebSocket connection with JWT token
+
+### Server → Client Events
+- `queueJoined`: Player successfully joined the queue
+- `queueLeft`: Player left the queue
+- `matchFound`: Match found, waiting for confirmation
+- `matchConfirmed`: Player confirmed the match
+- `matchStarted`: Both players confirmed, match begins
+- `matchCancelled`: Match cancelled or timed out
+- `opponentReconnected`: Opponent reconnected to an active match
+
+**Example WebSocket Event Data**:
+```json
+{
+  "event": "matchFound",
+  "data": {
+    "matchId": "match_123456789",
+    "opponent": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "confirmationTimeLimit": 30000
+  }
+}
+```
 
 ## Authentication
 

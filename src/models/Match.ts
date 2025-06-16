@@ -76,6 +76,10 @@ export interface MatchmakingEvents {
     matchId: string;
     timeToWin: number; // секунды до автопобеды
   };
+  opponentReconnected: {
+    player: string;
+    message: string;
+  };
   matchCompleted: {
     matchId: string;
     result: MatchResult;
