@@ -64,7 +64,10 @@ class DeckController {
     try {
       const walletAddress = req.user?.walletAddress;
       const { cardId } = req.params;
-      const { quantity = 1 } = req.body;
+      
+      // Safely handle empty request body
+      const requestBody = req.body || {};
+      const { quantity = 1 } = requestBody;
 
       if (!walletAddress) {
         res.status(401).json({
@@ -82,10 +85,12 @@ class DeckController {
         return;
       }
 
-      if (quantity < 1 || quantity > 2) {
+      // Validate quantity is a number
+      const quantityNum = Number(quantity);
+      if (isNaN(quantityNum) || quantityNum < 1 || quantityNum > 2) {
         res.status(400).json({
           success: false,
-          error: 'Quantity must be between 1 and 2'
+          error: 'Quantity must be a number between 1 and 2'
         });
         return;
       }
@@ -94,7 +99,7 @@ class DeckController {
       const updatedDeck = await deckService.addCardToDeck(
         walletAddress, 
         Number(cardId), 
-        Number(quantity)
+        quantityNum
       );
 
       // Map to DTO
@@ -139,7 +144,10 @@ class DeckController {
     try {
       const walletAddress = req.user?.walletAddress;
       const { cardId } = req.params;
-      const { quantity } = req.body;
+      
+      // Safely handle empty request body
+      const requestBody = req.body || {};
+      const { quantity } = requestBody;
 
       if (!walletAddress) {
         res.status(401).json({
@@ -157,11 +165,24 @@ class DeckController {
         return;
       }
 
+      // Validate quantity if provided
+      let quantityNum: number | undefined = undefined;
+      if (quantity !== undefined) {
+        quantityNum = Number(quantity);
+        if (isNaN(quantityNum) || quantityNum < 1) {
+          res.status(400).json({
+            success: false,
+            error: 'Quantity must be a positive number'
+          });
+          return;
+        }
+      }
+
       // Remove card from deck
       const updatedDeck = await deckService.removeCardFromDeck(
         walletAddress, 
         Number(cardId),
-        quantity ? Number(quantity) : undefined
+        quantityNum
       );
 
       // Map to DTO
