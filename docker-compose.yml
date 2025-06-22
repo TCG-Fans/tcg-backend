@@ -20,7 +20,7 @@ services:
       - ./:/usr/src/app
       - /usr/src/app/node_modules
     networks:
-      - app-network
+      - chainlink-tcg
 
   # MongoDB service
   mongodb:
@@ -32,12 +32,12 @@ services:
     volumes:
       - mongodb-data:/data/db
     networks:
-      - app-network
+      - chainlink-tcg
 
 # Networks
 networks:
-  app-network:
-    driver: bridge
+  chainlink-tcg:
+    external: true
 
 # Volumes
 volumes:
