@@ -396,7 +396,6 @@ class BlockchainService {
         // Add the card to the user's collection
         const blockNumber = raw.blockNumber ? Number(raw.blockNumber) : 0;
         await cardService.addCardToUser(to, cardId, quantity, blockNumber);
-        console.log(`Added card ${cardId} with quantity ${quantity} to user ${to} at block ${blockNumber}`);
       }
 
       console.log('TransferBatch event processed successfully');
