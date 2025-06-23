@@ -65,6 +65,7 @@ class WebSocketService {
       // Handle authentication
       socket.on('authenticate', async (token: string) => {
         try {
+          console.log('Received token:', token);
           const decoded = authService.verifyToken(token);
           console.log('Decoded token:', decoded);
           if (!decoded) {
@@ -165,11 +166,11 @@ class WebSocketService {
   getUserSocketId(walletAddress: string): string | null {
     const normalizedAddress = walletAddress.toLowerCase();
     const userSockets = this.connectedUsers.get(normalizedAddress);
-    
+
     if (userSockets && userSockets.size > 0) {
       return Array.from(userSockets)[0]; // Return first socket ID
     }
-    
+
     return null;
   }
 
