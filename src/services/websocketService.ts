@@ -65,7 +65,7 @@ class WebSocketService {
       // Handle authentication
       socket.on('authenticate', async (token: string) => {
         try {
-          console.log('Received token:', JSON.parse(token));
+          console.log('Received token: {}', token);
           const tokenJson = JSON.parse(token)
           const decoded = authService.verifyToken(tokenJson.token);
           console.log('Decoded token:', decoded);
