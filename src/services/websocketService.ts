@@ -1,5 +1,14 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+import { FrontendEvent, OpponentCardDraw, OpponentDiscard } from '../lib/game-engine/src/client/events';
+import {
+  BatchNewPower,
+  CardDraw, Destroy, Discard, GameEnd,
+  ManaRefreshEvent,
+  MaxManaEventData, NewPower,
+  PhaseChange,
+  Summon
+} from '../lib/game-engine/src/common/events';
 import authService from './authService';
 import matchmakingService from './matchmakingService';
 import { MatchmakingEvents } from '../models/Match';
@@ -159,6 +168,21 @@ class WebSocketService {
     this.io.to(`user:${normalizedAddress}`).emit(event, data);
 
     console.log(`WebSocket event emitted to ${normalizedAddress}:`, event, data);
+  }
+
+  /**
+   * Emit event to all sockets of a specific user
+   */
+  emitFromGameEngineToUser(
+    walletAddress: string,
+    data: FrontendEvent
+  ): void {
+    if (!this.io) return;
+
+    const normalizedAddress = walletAddress.toLowerCase();
+    this.io.to(`user:${normalizedAddress}`).emit(data.type, data.event);
+
+    console.log(`WebSocket event emitted to ${normalizedAddress}:`, data.type, data.event);
   }
 
   /**

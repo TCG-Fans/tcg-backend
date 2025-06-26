@@ -144,7 +144,7 @@ class MatchmakingService {
       match.status = MatchStatus.IN_PROGRESS;
       match.startedAt = new Date();
 
-      await gameService.getInstance().createGameSession(match.matchId,match.player1.walletAddress, match.player2.walletAddress);
+      await gameService.getInstance().createGameSession(match.matchId, match.player1.walletAddress, match.player2.walletAddress);
 
       // Отменяем таймер подтверждения
       this.clearConfirmationTimer(match.matchId);
