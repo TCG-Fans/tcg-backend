@@ -8,14 +8,14 @@ class DeckService {
   /**
    * Get user's active deck
    */
-  async getUserDeck(walletAddress: string): Promise<any> {
+  async getUserDeck(walletAddress: string): Promise<IDeck> {
     try {
       const normalizedAddress = walletAddress.toLowerCase();
-      
+
       // Find user's active deck
-      let deck: any = await Deck.findOne({ 
-        walletAddress: normalizedAddress, 
-        isActive: true 
+      let deck: any = await Deck.findOne({
+        walletAddress: normalizedAddress,
+        isActive: true
       });
 
       // If no active deck exists, create a default one
@@ -36,7 +36,7 @@ class DeckService {
   async getUserDeckWithDetails(walletAddress: string): Promise<{deck: any, cardsWithDetails: {card: ICard, deckCard: IDeckCard}[]} | null> {
     try {
       const deck = await this.getUserDeck(walletAddress);
-      
+
       if (!deck || !deck.cards || deck.cards.length === 0) {
         return { deck: deck!, cardsWithDetails: [] };
       }
@@ -99,12 +99,12 @@ class DeckService {
       if (existingCardIndex >= 0) {
         // Update quantity (max 2 per card)
         const newQuantity = deck.cards[existingCardIndex].quantity + quantity;
-        
+
         // Check maximum limit of 2 cards per type
         if (newQuantity > 2) {
           throw new Error('Maximum 2 cards of the same type allowed in deck');
         }
-        
+
         // Check if user has enough cards
         if (newQuantity > userCard.quantity) {
           throw new Error('Not enough cards in collection');
@@ -129,7 +129,7 @@ class DeckService {
 
       // Save deck
       await deck.save();
-      
+
       // Emit WebSocket event for deck update
       websocketService.emitToUser(normalizedAddress, 'deckUpdated', {
         walletAddress: normalizedAddress,
@@ -137,7 +137,7 @@ class DeckService {
         cardId,
         quantity
       });
-      
+
       return deck;
     } catch (error) {
       console.error('Error adding card to deck:', error);
@@ -167,7 +167,7 @@ class DeckService {
       // If quantity is specified, reduce by that amount, otherwise remove completely
       if (quantity && quantity > 0) {
         const newQuantity = deck.cards[cardIndex].quantity - quantity;
-        
+
         if (newQuantity <= 0) {
           // Remove card completely
           deck.cards.splice(cardIndex, 1);
@@ -182,14 +182,14 @@ class DeckService {
 
       // Save deck
       await deck.save();
-      
+
       // Emit WebSocket event for deck update
       websocketService.emitToUser(normalizedAddress, 'deckUpdated', {
         walletAddress: normalizedAddress,
         action: 'remove',
         cardId
       });
-      
+
       return deck;
     } catch (error) {
       console.error('Error removing card from deck:', error);
@@ -217,7 +217,7 @@ class DeckService {
       });
 
       await deck.save();
-      
+
       // Emit WebSocket event for new deck creation
       websocketService.emitToUser(walletAddress, 'deckUpdated', {
         walletAddress,
@@ -225,7 +225,7 @@ class DeckService {
         cardId: 1, // Default card
         quantity: 1
       });
-      
+
       return deck;
     } catch (error) {
       console.error('Error creating default deck:', error);
@@ -239,7 +239,7 @@ class DeckService {
   async clearDeck(walletAddress: string): Promise<any> {
     try {
       const normalizedAddress = walletAddress.toLowerCase();
-      
+
       const deck = await this.getUserDeck(normalizedAddress);
       if (!deck) {
         throw new Error('Deck not found');
@@ -247,13 +247,13 @@ class DeckService {
 
       deck.cards = [];
       await deck.save();
-      
+
       // Emit WebSocket event for deck clear
       websocketService.emitToUser(normalizedAddress, 'deckUpdated', {
         walletAddress: normalizedAddress,
         action: 'clear'
       });
-      
+
       return deck;
     } catch (error) {
       console.error('Error clearing deck:', error);

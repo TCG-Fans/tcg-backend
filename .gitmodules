@@ -1,0 +1,3 @@
+[submodule "src/lib/game-engine"]
+	path = src/lib/game-engine
+	url = git@github.com:TCG-Fans/game-engine.git
