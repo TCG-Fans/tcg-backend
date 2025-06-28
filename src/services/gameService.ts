@@ -6,9 +6,15 @@
  */
 
 import { GameEngineAdapter } from '../adapters/gameEngineAdapter';
+import { TurnPhase } from '../lib/game-engine/src/common/game/model';
 import { BackendEvents, toFrontendEvent } from '../lib/game-engine/src/server/events';
 import { ServerGame } from '../lib/game-engine/src/server/game';
 import websocketService from './websocketService';
+
+export interface GameSession {
+  engine: ServerGame;
+  context: any;
+}
 
 /**
  * GameService manages game sessions and integrates with the game-engine
@@ -35,7 +41,25 @@ export class GameService {
   }
 
   /**
+   * Emits game events to both players
+   * @param eventType - Type of game event
+   * @param eventData - Event data
+   * @param player1Wallet - First player's wallet address
+   * @param player2Wallet - Second player's wallet address
+   */
+  private emitGameEvent(eventType: keyof BackendEvents, eventData: any, player1Wallet: string, player2Wallet: string): void {
+    // For player 1
+    const player1Event = toFrontendEvent(eventType, { [eventType]: eventData } as any, true);
+    websocketService.emitFromGameEngineToUser(player1Wallet, player1Event);
+
+    // For player 2
+    const player2Event = toFrontendEvent(eventType, { [eventType]: eventData } as any, false);
+    websocketService.emitFromGameEngineToUser(player2Wallet, player2Event);
+  }
+
+  /**
    * Creates a new game session between two players
+   * @param matchId - Match ID
    * @param player1Wallet - First player's wallet address
    * @param player2Wallet - Second player's wallet address
    * @returns Game session ID
@@ -45,26 +69,7 @@ export class GameService {
 
     // Initialize game using the adapter
     const gameInstance = await GameEngineAdapter.initializeGame(player1Wallet, player2Wallet);
-
-    // Set up event listeners for game events
-    const gameEvents: (keyof BackendEvents)[] = [
-      'card-draw', 'summon', 'destroy', 'new-power', 'batch-new-power',
-      'discard', 'end', 'phase-change', 'max-mana', 'mana-refresh'
-    ];
-
-    // Set up event handlers for all game events
-    gameEvents.forEach(eventType => {
-      gameInstance.emitter.on(eventType, (eventData) => {
-        // For player 1
-        const player1Event = toFrontendEvent(eventType, { [eventType]: eventData } as any, true);
-        websocketService.emitFromGameEngineToUser(player1Wallet, player1Event);
-
-        // For player 2
-        const player2Event = toFrontendEvent(eventType, { [eventType]: eventData } as any, false);
-        websocketService.emitFromGameEngineToUser(player2Wallet, player2Event);
-
-      });
-    });
+    this.activeSessions.set(matchId, gameInstance);
   }
 }
 
