@@ -50,7 +50,7 @@ class CardService {
   }
 
   // Add card to user's collection
-  async addCardToUser(walletAddress: string, cardId: number, quantity: number = 1, blockNumber: number = 0): Promise<void> {
+  async addCardToUser(walletAddress: string, cardId: number, quantity: number = 1, blockNumber: number = 0, skipDuplicates: boolean): Promise<void> {
     try {
       // Normalize wallet address
       const normalizedAddress = walletAddress.toLowerCase();
@@ -72,10 +72,12 @@ class CardService {
       // Check if user already has this card
       const existingCardIndex = user.cards.findIndex(card => card.cardId === cardId);
 
-      // Check if this is a duplicate transaction (same card and block number)
-      if (existingCardIndex >= 0 && user.cards[existingCardIndex].lastBlockNumber >= blockNumber && blockNumber !== 0) {
-        console.log(`Duplicate transaction detected for card ${cardId} at block ${blockNumber}. Skipping.`);
-        return;
+      if (skipDuplicates) {
+        // Check if this is a duplicate transaction (same card and block number)
+        if (existingCardIndex >= 0 && user.cards[existingCardIndex].lastBlockNumber >= blockNumber && blockNumber !== 0) {
+          console.log(`Duplicate transaction detected for card ${cardId} at block ${blockNumber}. Skipping.`);
+          return;
+        }
       }
 
       if (existingCardIndex >= 0) {

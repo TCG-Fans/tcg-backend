@@ -120,19 +120,19 @@ class BlockchainService {
 
     try {
       // Process historical events first
-      await this.processHistoricalEvents();
+      await this.processHistoricalEvents(true);
 
       // Set up real-time event listeners
       this.setupEventListeners();
 
-      // Set up polling for new blocks as a backup mechanism
-      this.pollingInterval = setInterval(async() => {
-        try {
-          await this.processHistoricalEvents();
-        } catch (error) {
-          console.error('Error in polling interval:', error);
-        }
-      }, this.POLLING_INTERVAL_MS);
+      // // Set up polling for new blocks as a backup mechanism
+      // this.pollingInterval = setInterval(async() => {
+      //   try {
+      //     await this.processHistoricalEvents();
+      //   } catch (error) {
+      //     console.error('Error in polling interval:', error);
+      //   }
+      // }, this.POLLING_INTERVAL_MS);
 
       console.log(`Blockchain monitoring started successfully with polling interval of ${this.POLLING_INTERVAL_MS / 1000} seconds`);
     } catch (error) {
@@ -178,7 +178,7 @@ class BlockchainService {
   /**
    * Process historical events from the last processed block
    */
-  private async processHistoricalEvents(): Promise<void> {
+  private async processHistoricalEvents(skipDuplicates: boolean): Promise<void> {
     try {
       const currentBlock = await this.provider.getBlockNumber();
       let fromBlock = this.lastProcessedBlock + 1;
@@ -213,7 +213,7 @@ class BlockchainService {
 
         // Process each event
         for (const event of events) {
-          await this.logEvent(event);
+          await this.logEvent(event, skipDuplicates);
         }
 
         // Save the last processed block
@@ -237,7 +237,7 @@ class BlockchainService {
 
     // Listen for all events
     this.cardpoolContract.on('*', async (event) => {
-      await this.logEvent(event.log);
+      await this.logEvent(event.log, false);
     });
 
     // Set up WebSocket reconnection if using WebSocket provider
@@ -302,7 +302,7 @@ class BlockchainService {
    * Log event details to console
    * @param event - The blockchain event to log
    */
-  private async logEvent(raw: ethers.EventLog | ethers.Log | any): Promise<void> {
+  private async logEvent(raw: ethers.EventLog | ethers.Log | any, skipDuplicates: boolean): Promise<void> {
     console.log('──────────────────────────────────');
 
     let parsedLog: LogDescription | null;
@@ -321,7 +321,7 @@ class BlockchainService {
 
     // Process specific events
     if (parsedLog?.name === 'TransferBatch') {
-      await this.handleTransferBatchEvent(raw);
+      await this.handleTransferBatchEvent(raw, skipDuplicates);
     }
   }
 
@@ -361,7 +361,7 @@ class BlockchainService {
    * @param parsedLog - The parsed log of the TransferBatch event
    * @param raw - The raw event data
    */
-  private async handleTransferBatchEvent(raw: ethers.EventLog | ethers.Log | any): Promise<void> {
+  private async handleTransferBatchEvent(raw: ethers.EventLog | ethers.Log | any, skipDuplicates: boolean): Promise<void> {
     try {
       // Extract event arguments
       const {operator, from, to, rawIds, rawValues} = raw.args;
@@ -395,7 +395,7 @@ class BlockchainService {
 
         // Add the card to the user's collection
         const blockNumber = raw.blockNumber ? Number(raw.blockNumber) : 0;
-        await cardService.addCardToUser(to, cardId, quantity, blockNumber);
+        await cardService.addCardToUser(to, cardId, quantity, blockNumber, skipDuplicates);
       }
 
       console.log('TransferBatch event processed successfully');
