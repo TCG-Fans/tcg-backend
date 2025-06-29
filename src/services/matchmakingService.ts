@@ -8,7 +8,6 @@ import Match, {
   MatchResult,
   MatchmakingEvents
 } from '../models/Match';
-import gameService from './gameService';
 import websocketService from './websocketService';
 
 class MatchmakingService {
