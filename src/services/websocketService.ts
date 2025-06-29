@@ -165,6 +165,7 @@ class WebSocketService {
     if (!this.io) return;
 
     const normalizedAddress = walletAddress.toLowerCase();
+    console.log(`Connected users: ${JSON.stringify(this.getConnectedUsers())}`)
     this.io.to(`user:${normalizedAddress}`).emit(event, data);
 
     console.log(`WebSocket event emitted to ${normalizedAddress}:`, event, data);
